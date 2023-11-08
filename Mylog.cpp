@@ -5,399 +5,386 @@
 
 enum Operations { Add, Del, Move, Resize, Edit, Texting };  // İşlemler adlı bir sıralı liste (enum) tanımla
 
+
+
 void mylog::Undo()
 {
-    if (ops.empty())
-        return;
+	if (ops.empty())
+		return;
 
-    json J = ops.back();
-    ops.pop_back();
-    jredo = J;
+	json J = ops.back();
+	ops.pop_back();
+	jredo = J;
 
-    if (J.empty())
-        return;
+	if (J.empty())
+		return;
 
-    int op = J["operation"];
-    switch (op)
-    {
-    case Add:  // Ekle işlemini geri al
-    {
-        // Sadece sondaki nesneyi sil
-        delete Globals::var().drawObjList.back();
-        Globals::var().drawObjList.pop_back();
-        Globals::var().selectedObjectPtr = nullptr;
-        Globals::var().hasSelected = false;
-        break;
-    }
-    case Del:  // Sil işlemini geri al
-    {
-        int pos = J["which"];
+	int op = J["operation"];
+	switch (op)
+	{
+	case Add:   // Ekle işlemini geri al
+	{
+		//Sadece sondaki nesneyi sil
+		delete Globals::var().drawObjList.back();
+		Globals::var().drawObjList.pop_back();
+		Globals::var().selectedObjectPtr = nullptr;
+		Globals::var().hasSelected = false;
+		break;
+	}
+	case Del: // Sil işlemini geri al
+	{
+		int pos = J["which"];
 
-        if (pos == -1)  // Yeni metni geri getirme işlemi için
-        {
-            Globals::var().newText.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
-            Globals::var().newText.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
-            vector<string> text = J["text"];
-            Globals::var().newText.text = text;
-            Globals::var().newText.inputPos.x = J["inputpos"][0];
-            Globals::var().newText.inputPos.y = J["inputpos"][1];
-            Globals::var().newText.CalculateCaretPosition();
-            Globals::var().newText.startFinished = true;
-            Globals::var().newText.endFinished = false;
+		if (pos == -1)  
+		{
+			Globals::var().newText.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
+			Globals::var().newText.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
+			vector<string> text = J["text"];
+			Globals::var().newText.text = text;
+			Globals::var().newText.inputPos.x = J["inputpos"][0];
+			Globals::var().newText.inputPos.y = J["inputpos"][1];
+			Globals::var().newText.CalculateCaretPosition();
+			Globals::var().newText.startFinished = true;
+			Globals::var().newText.endFinished = false;
 
-            // Yeni metni seç
-            Globals::var().selectedObjectPtr = &Globals::var().newText;
-            Globals::var().hasSelected = true;
-            break;
-        }
+			// newText seçme
+			Globals::var().selectedObjectPtr = &Globals::var().newText;
+			Globals::var().hasSelected = true;
+			break;
+		}
 
-        auto it = Globals::var().drawObjList.begin();
-        std::advance(it, pos);
-        DrawObj* ptr = *it;
+		auto it = Globals::var().drawObjList.begin();
+		std::advance(it, pos);
+		
+		switch ((int)J["objectType"])
+		{
+		case Line:
+		{
+			LineObj newLine;
+			newLine.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
+			newLine.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
+			Globals::var().drawObjList.insert(it, new LineObj(newLine));
+			break;
+		}
+		case Rect:
+		{
+			RectangularObj newRect;
+			newRect.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
+			newRect.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
+			Globals::var().drawObjList.insert(it, new RectangularObj(newRect));
+			break;
+		}
+		case Circle:
+		{
+			CircleObj newCircle;
+			newCircle.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
+			newCircle.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
+			Globals::var().drawObjList.insert(it, new CircleObj(newCircle));
+			break;
+		}
+		case Text:
+		{
+			TextObj newText;
+			newText.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
+			newText.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
+			vector<string> text = J["text"];
+			newText.text = text;
+			Globals::var().drawObjList.insert(it, new TextObj(newText));
+			break;
+		}
 
-        // Nesneyi belirtilen konumda geri ekleyin
-        switch ((int)J["objectType"])
-        {
-        case Line:
-        {
-            LineObj newLine;
-            newLine.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
-            newLine.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
-            Globals::var().drawObjList.insert(it, new LineObj(newLine));
-            break;
-        }
-        case Rect:
-        {
-            RectangularObj newRect;
-            newRect.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
-            newRect.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
-            Globals::var().drawObjList.insert(it, new RectangularObj(newRect));
-            break;
-        }
-        case Circle:
-        {
-            CircleObj newCircle;
-            newCircle.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
-            newCircle.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
-            Globals::var().drawObjList.insert(it, new CircleObj(newCircle));
-            break;
-        }
-        case Text:
-        {
-            TextObj newText;
-            newText.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
-            newText.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
-            vector<string> text = J["text"];
-            newText.text = text;
-            Globals::var().drawObjList.insert(it, new TextObj(newText));
-            break;
-        }
-        }
 
-        // Silinen nesneyi serbest bırak
-        delete ptr;
-        break;
-    }
-    case Move:  // Taşı işlemini geri al
-    {
-        int pos = J["which"];
+		}
+		break;
+	}
+	case Move:  // Taşı işlemini geri al
+	{
+		
+		int pos = J["which"];
 
-        if (pos == -1)  // Yeni metni taşıma işlemi için
-        {
-            int deltaX, deltaY;
-            deltaX = J["deltax"];
-            deltaY = J["deltay"];
-            Globals::var().newText.ptBeg.x = J["start"][0];
-            Globals::var().newText.ptBeg.y = J["start"][1];
-            Globals::var().newText.ptEnd.x += deltaX;
-            Globals::var().newText.ptEnd.y += deltaY;
-            break;
-        }
+		if (pos == -1)  //for moving newText
+		{
+			int deltaX, deltaY;
+			deltaX = J["deltax"];
+			deltaY = J["deltay"];
+			Globals::var().newText.ptBeg.x = J["start"][0];
+			Globals::var().newText.ptBeg.y = J["start"][1];
+			Globals::var().newText.ptEnd.x += deltaX;
+			Globals::var().newText.ptEnd.y += deltaY;
+			break;
+		}
 
-        auto it = Globals::var().drawObjList.begin();
-        std::advance(it, pos);
+		auto it = Globals::var().drawObjList.begin();
+		std::advance(it, pos);
 
-        int deltaX, deltaY;
-        deltaX = J["deltax"];
-        deltaY = J["deltay"];
-        (*it)->ptBeg.x = J["start"][0];
-        (*it)->ptBeg.y = J["start"][1];
-        (*it)->ptEnd.x += deltaX;
-        (*it)->ptEnd.y += deltaY;
-        break;
-    }
-    case Resize:  // Yeniden Boyutlandır işlemini geri al
-    {
-        int pos = J["which"];
+		int deltaX, deltaY;
+		deltaX = J["deltax"];
+		deltaY = J["deltay"];
+		(*it)->ptBeg.x = J["start"][0];
+		(*it)->ptBeg.y = J["start"][1];
+		(*it)->ptEnd.x += deltaX;
+		(*it)->ptEnd.y += deltaY;
+		break;
+	}
+	case Resize:  // Yeniden Boyutlandır işlemini geri al
+	{
+		
+		int pos = J["which"];
 
-        if (pos == -1)  // Yeni metni yeniden boyutlandırma işlemi için
-        {
-            Globals::var().newText.ptBeg.x = J["oldBegin"][0];
-            Globals::var().newText.ptBeg.y = J["oldBegin"][1];
-            Globals::var().newText.ptEnd.x = J["oldEnd"][0];
-            Globals->var().newText.ptEnd.y = J["oldEnd"][1];
-            break;
-        }
+		if (pos == -1)  
+		{
+			Globals::var().newText.ptBeg.x = J["oldBegin"][0];
+			Globals::var().newText.ptBeg.y = J["oldBegin"][1];
+			Globals::var().newText.ptEnd.x = J["oldEnd"][0];
+			Globals::var().newText.ptEnd.y = J["oldEnd"][1];
+			break;
+		}
 
-        auto it = Globals::var().drawObjList.begin();
-        std::advance(it, pos);
+		auto it = Globals::var().drawObjList.begin();
+		std::advance(it, pos);
 
-        (*it)->ptBeg.x = J["oldBegin"][0];
-        (*it)->ptBeg.y = J["oldBegin"][1];
-        (*it)->ptEnd.x = J["oldEnd"][0];
-        (*it)->ptEnd.y = J["oldEnd"][1];
-        break;
-    }
-    case Edit:  // Düzenle işlemini geri al
-    {
-        int pos = J["which"];
+		(*it)->ptBeg.x = J["oldBegin"][0];
+		(*it)->ptBeg.y = J["oldBegin"][1];
+		(*it)->ptEnd.x = J["oldEnd"][0];
+		(*it)->ptEnd.y = J["oldEnd"][1];
+		break;
+	}
+	case Edit:  // Düzenle işlemini geri al
+	{
+		
+		int pos = J["which"];
 
-        if (pos == -1)  // Yeni metni düzenleme işlemi için
-        {
-            Globals::var().newText.color = J["oldColor"];
-            Globals::var().newText.backgroundColor = J["oldBgColor"];
-            break;
-        }
+		if (pos == -1)  
+		{
+			Globals::var().newText.color = J["oldColor"];
+			Globals::var().newText.backgroundColor = J["oldBgColor"];
+			break;
+		}
 
-        auto it = Globals::var().drawObjList.begin();
-        std::advance(it, pos);
+		auto it = Globals::var().drawObjList.begin();
+		std::advance(it, pos);
 
-        (*it)->color = J["oldColor"];
+		(*it)->color = J["oldColor"];
+		if ((*it)->objectType < 4)
+		{
+			(*it)->lineWidth = J["oldWidth"];
+			if ((*it)->objectType > 1)
+			{
+				(*it)->backgroundColor = J["oldBgColor"];
 
-        if ((*it)->objectType < 4)
-        {
-            (*it)->lineWidth = J["oldWidth"];
+			}
+		}
+		break;
+	}
+	case Texting: 
+	{
+		int pos = J["which"];
+		vector<string> vs = J["oldText"];
+		POINT in;
+		in.x = J["oldInput"][0];
+		in.y = J["oldInput"][1];
 
-            if ((*it)->objectType > 1)
-            {
-                (*it)->backgroundColor = J["oldBgColor"];
-            }
-        }
-        break;
-    }
-    case Texting:  // Metni düzenleme işlemini geri al
-    {
-        int pos = J["which"];
-        vector<string> vs = J["oldText"];
-        POINT in;
-        in.x = J["oldInput"][0];
-        in.y = J["oldInput"][1];
+		if (pos != -1)
+		{
+			auto it = Globals::var().drawObjList.begin();
+			std::advance(it, pos);
+			TextObj* t = dynamic_cast<TextObj*>((*it));
+			t->text = vs;
+			t->inputPos = in;
+			t->CalculateCaretPosition();
+		}
+		else
+			UpdateNewText(vs, in);  
 
-        if (pos != -1)
-        {
-            auto it = Globals::var().drawObjList.begin();
-            std::advance(it, pos);
-            TextObj* t = dynamic_cast<TextObj*>(*it);
-            t->text = vs;
-            t->inputPos = in;
-            t->CalculateCaretPosition();
-        }
-        else
-        {
-            // Yeni metni güncelle
-            UpdateNewText(vs, in);
-        }
-        break;
-    }
-    default:
-        break;
-    }
+		break;
+	}
+	default:
+		break;
+	}
 }
 
 void mylog::Redo()
 {
-    json J = jredo;
+	json J = jredo;
 
-    if (J.empty())
-        return;
+	if (J.empty())
+		return;
 
-    int op = J["operation"];
-    switch (op)
-    {
-    case Add:  // Ekle işlemini tekrarla
-    {
-        // Nesneyi belirtilen konuma ekle
-        switch ((int)J["objectType"])
-        {
-        case Line:
-        {
-            LineObj newLine;
-            newLine.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
-            newLine.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
-            Globals::var().drawObjList.push_back(new LineObj(newLine));
-            break;
-        }
-        case Rect:
-        {
-            RectangularObj newRect;
-            newRect.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
-            newRect.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
-            Globals::var().drawObjList.push_back(new RectangularObj(newRect));
-            break;
-        }
-        case Circle:
-        {
-            CircleObj newCircle;
-            newCircle.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
-            newCircle.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
-            Globals::var().drawObjList.push_back(new CircleObj(newCircle));
-            break;
-        }
-        case Text:
-        {
-            TextObj newText;
-            newText.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
-            newText.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
-            vector<string> text = J["text"];
-            newText.text = text;
-            Globals::var().drawObjList.push_back(new TextObj(newText));
-            break;
-        }
-        }
-        break;
-    }
-    case Del:  // Sil işlemini tekrarla
-    {
-        // Belirtilen konumu sil
-        int pos = J["which"];
+	int op = J["operation"];
+	switch (op)
+	{
+	case Add:  //ekleme islemini tekrarla
+	{
+		
+		switch ((int)J["objectType"])
+		{
+		case Line:
+		{
+			LineObj newLine;
+			newLine.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
+			newLine.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
+			Globals::var().drawObjList.push_back(new LineObj(newLine));
+			break;
+		}
+		case Rect:
+		{
+			RectangularObj newRect;
+			newRect.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
+			newRect.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
+			Globals::var().drawObjList.push_back(new RectangularObj(newRect));
+			break;
+		}
+		case Circle:
+		{
+			CircleObj newCircle;
+			newCircle.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
+			newCircle.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
+			Globals::var().drawObjList.push_back(new CircleObj(newCircle));
+			break;
+		}
+	
+		case Text:
+		{
+			TextObj newText;
+			newText.MakeStart(J["ptBeg"][0], J["ptBeg"][1], J["color"], J["backgroundColor"], J["lineWidth"]);
+			newText.MakeEnd(J["ptEnd"][0], J["ptEnd"][1], 0, 0);
+			vector<string> text = J["text"];
+			newText.text = text;
+			Globals::var().drawObjList.push_back(new TextObj(newText));
+			break;
+		}
 
-        if (pos == -1)  // Yeni metni silme işlemi için
-        {
-            Globals::var().newText.Clean();
-            break;
-        }
+		}
+		break;
+	}
+	case Del: // Sil işlemini tekrarla
+	{
+		// Belirtilen konumu sil
+		int pos = J["which"];
 
-        auto it = Globals::var().drawObjList.begin();
-        std::advance(it, pos);
-        DrawObj* ptr = *it;
+		if (pos == -1)  
+		{
+			Globals::var().newText.Clean();
+			break;
+		}
 
-        Globals::var().drawObjList.erase(it);
-        delete ptr;
+		auto it = Globals::var().drawObjList.begin();
+		std::advance(it, pos);
+		DrawObj * ptr = *it;
+		Globals::var().drawObjList.erase(it);
+		delete ptr;
 
-        Globals::var().selectedObjectPtr = nullptr;
-        Globals::var().hasSelected = false;
-        break;
-    }
-    case Move:  // Taşı işlemini tekrarla
-    {
-        // Belirtilen konumun ptBeg/End değerini geri taşı
-        int pos = J["which"];
-        if (pos == -1)  // Yeni metni taşıma işlemi için
-        {
-            int deltaX, deltaY;
-            deltaX = J["deltax"];
-            deltaY = J["deltay"];
-            Globals::var().newText.ptBeg.x -= deltaX;
-            Globals::var().newText.ptBeg.y -= deltaY;
-            Globals::var().newText.ptEnd.x -= deltaX;
-            Globals->var().newText.ptEnd.y -= deltaY;
-            break;
-        }
+		Globals::var().selectedObjectPtr = nullptr;
+		Globals::var().hasSelected = false;
+		break;
+	}
+	case Move:  // Taşı işlemini tekrarla
+	{
+		
+		int pos = J["which"];
+		if (pos == -1)  
+		{
+			int deltaX, deltaY;
+			deltaX = J["deltax"];
+			deltaY = J["deltay"];
+			Globals::var().newText.ptBeg.x -= deltaX;
+			Globals::var().newText.ptBeg.y -= deltaY;
+			Globals::var().newText.ptEnd.x -= deltaX;
+			Globals::var().newText.ptEnd.y -= deltaY;
+			break;
+		}
 
-        auto it = Globals::var().drawObjList.begin();
-        std::advance it, pos);
+		auto it = Globals::var().drawObjList.begin();
+		std::advance(it, pos);
 
-        int deltaX, deltaY;
-        deltaX = J["deltax"];
-        deltaY = J["deltay"];
-        (*it)->ptBeg.x -= deltaX;
-        (*it)->ptBeg.y -= deltaY;
-        (*it)->ptEnd.x -= deltaX;
-        (*it)->ptEnd.y -= deltaY;
-        break;
-    }
-    case Resize:  // Yeniden boyutlandırma işlemini tekrarla
-    {
-        // Yeni noktalara geri dön
-        int pos = J["which"];
+		int deltaX, deltaY;
+		deltaX = J["deltax"];
+		deltaY = J["deltay"];
+		(*it)->ptBeg.x -= deltaX;
+		(*it)->ptBeg.y -= deltaY;
+		(*it)->ptEnd.x -= deltaX;
+		(*it)->ptEnd.y -= deltaY;
+		break;
+	}
+	case Resize:  // Yeniden boyutlandırma işlemini tekrarla
+	{
+		
+		int pos = J["which"];
 
-        if (pos == -1)  // Yeni metni yeniden boyutlandırma işlemi için
-        {
-            Globals::var().newText.ptBeg.x = J["newBegin"][0];
-            Globals::var().newText.ptBeg.y = J["newBegin"][1];
-            Globals->var().newText.ptEnd.x = J["newEnd"][0];
-            Globals->var().newText.ptEnd.y = J["newEnd"][1];
-            break;
-        }
+		if (pos == -1)  
+		{
+			Globals::var().newText.ptBeg.x = J["newBegin"][0];
+			Globals::var().newText.ptBeg.y = J["newBegin"][1];
+			Globals::var().newText.ptEnd.x = J["newEnd"][0];
+			Globals::var().newText.ptEnd.y = J["newEnd"][1];
+			break;
+		}
 
-        auto it = Globals::var().drawObjList.begin();
-        std::advance it, pos);
+		auto it = Globals::var().drawObjList.begin();
+		std::advance(it, pos);
 
-        (*it)->ptBeg.x = J["newBegin"][0];
-        (*it)->ptBeg.y = J["newBegin"][1];
-        (*it)->ptEnd.x = J["newEnd"][0];
-        (*it)->ptEnd.y = J["newEnd"][1];
-        break;
-    }
-    case Edit:  // Düzenle işlemini tekrarla
-    {
-        // Yeni renk/genişlik değerlerine geri dön
-        int pos = J["which"];
-        if (pos == -1)  // Yeni metni düzenleme işlemi için
-        {
-            Globals::var().newText.color = J["newColor"];
-            Globals::var().newText.backgroundColor = J["newBgColor"];
-           
-    break;
-    }
-auto it = Globals::var().drawObjList.begin();  // Geçerli bir öğe için bir iterator oluştur
-std::advance(it, pos);  // Iteratorü "pos" adındaki değer kadar ilerlet
+		(*it)->ptBeg.x = J["newBegin"][0];
+		(*it)->ptBeg.y = J["newBegin"][1];
+		(*it)->ptEnd.x = J["newEnd"][0];
+		(*it)->ptEnd.y = J["newEnd"][1];
+		break;
+	}
+	case Edit:  //redo modify
+	{
+		// Yeni renk/genişlik değerlerine geri dön
+		int pos = J["which"];
+		if (pos == -1)  
+		{
+			Globals::var().newText.color = J["newColor"];
+			Globals::var().newText.backgroundColor = J["newBgColor"];
+			break;
+		}
 
-string test = J.dump();  // JSON verilerini bir dizeye dök ve "test" adlı değişkene kaydet
+		auto it = Globals::var().drawObjList.begin();
+		std::advance(it, pos);
+		string test = J.dump();
+		(*it)->color = J["newColor"];
+		if ((*it)->objectType < 4)
+		{
+			(*it)->lineWidth = J["newWidth"];
+			if ((*it)->objectType > 1)
+			{
+				(*it)->backgroundColor = J["newBgColor"];
+			}
+		}
+		break;
+	}
+	case Texting:  
+	{
+		string test = J.dump();  // JSON verilerini bir dizeye dök ve "test" adlı değişkene kaydet
+		int pos = J["which"];  // JSON'dan "which" değerini al ve "pos" adlı değişkene kaydet
+		vector<string> vs = J["newText"];  // JSON'dan "newText" değerini al ve "vs" adlı vektöre kaydet
+		POINT in;
+		in.x = J["newInput"][0];  // JSON'dan "newInput" dizisinin ilk öğesini "in.x" değişkenine kaydet
+		in.y = J["newInput"][1];  // JSON'dan "newInput" dizisinin ikinci öğesini "in.y" değişkenine kaydet
 
-// Geçerli öğenin renk bilgisini JSON'dan alınan "newColor" ile güncelle
-(*it)->color = J["newColor"];
 
-if ((*it)->objectType < 4)  // Geçerli öğenin "objectType" değeri 4'ten küçükse
-{
-    // Öğenin kalınlığını JSON'dan alınan "newWidth" ile güncelle
-    (*it)->lineWidth = J["newWidth"];
+		if (pos != -1)
+		{
+			auto it = Globals::var().drawObjList.begin();  // Geçerli bir öğe için bir iterator oluştur
+			std::advance(it, pos);  // Iteratorü "pos" adındaki değer kadar ilerlet
+			TextObj* t = dynamic_cast<TextObj*>(*it);  // Öğeyi bir "TextObj" türüne dönüştür
+			t->text = vs;  // Metni "vs" ile güncelle
+			t->inputPos = in;  // Giriş pozisyonunu "in" ile güncelle
+			t->CalculateCaretPosition();  // İmleç pozisyonunu hesapla
+		}
+		else
+			UpdateNewText(vs, in); // Yeni metni "vs" vektörü ve "in" ile ekleyen işlevi çağır
+		break;
+	}
+	default:
+		break;
+	}
 
-    if ((*it)->objectType > 1)  // Geçerli öğenin "objectType" değeri 1'den büyükse
-    {
-        // Öğenin arka plan rengini JSON'dan alınan "newBgColor" ile güncelle
-        (*it)->backgroundColor = J["newBgColor"];
-    }
+	ops.push_back(jredo);  // "jredo" işlemini geri almak için operasyonları "ops" listesine ekler
+	jredo.clear();  // "jredo" işlem listesini temizler
 }
 
-break;  // Bu "case" bölümünün sona erdiğini belirtmek için kullanılır
-
-// "Texting" durumu için "case" bölümü başlangıcı
-case Texting:
-{
-    string test = J.dump();  // JSON verilerini bir dizeye dök ve "test" adlı değişkene kaydet
-    int pos = J["which"];  // JSON'dan "which" değerini al ve "pos" adlı değişkene kaydet
-    vector<string> vs = J["newText"];  // JSON'dan "newText" değerini al ve "vs" adlı vektöre kaydet
-    POINT in;
-    in.x = J["newInput"][0];  // JSON'dan "newInput" dizisinin ilk öğesini "in.x" değişkenine kaydet
-    in.y = J["newInput"][1];  // JSON'dan "newInput" dizisinin ikinci öğesini "in.y" değişkenine kaydet
-
-    if (pos != -1)  // Eğer "pos" -1 değilse (yani geçerli bir öğenin düzenlenmesi gerekiyorsa)
-    {
-        auto it = Globals::var().drawObjList.begin();  // Geçerli bir öğe için bir iterator oluştur
-        std::advance(it, pos);  // Iteratorü "pos" adındaki değer kadar ilerlet
-        TextObj* t = dynamic_cast<TextObj*>(*it);  // Öğeyi bir "TextObj" türüne dönüştür
-        t->text = vs;  // Metni "vs" ile güncelle
-        t->inputPos = in;  // Giriş pozisyonunu "in" ile güncelle
-        t->CalculateCaretPosition();  // İmleç pozisyonunu hesapla
-    }
-    else  // Eğer "pos" -1 ise (yani yeni metin eklenmesi gerekiyorsa)
-    {
-        UpdateNewText(vs, in);  // Yeni metni "vs" vektörü ve "in" ile ekleyen işlevi çağır
-    }
-    break;  // Bu "case" bölümünün sona erdiğini belirtmek için kullanılır
-}
-
-default:  // Diğer durumlar için
-{
-    // Herhangi bir özel işlem yapmayacak, bu "case" bölümü sadece varsayılan durumu temsil ediyor
-}
-break;  // Bu "default" bölümünün sona erdiğini belirtmek için kullanılır
-}
-
-ops.push_back(jredo);  // "jredo" işlemini geri almak için operasyonları "ops" listesine ekler
-jredo.clear();  // "jredo" işlem listesini temizler
-}
 void mylog::ClearLogs()
 {
 	ops.clear();  // "ops" adlı liste verisini temizle, tüm işlemleri kaldır
@@ -429,7 +416,7 @@ void mylog::PushObject(DrawObj* it, json jit)
 }
 
 // Öğe eklemek için kullanılan işlemi başlat
-void mylog::OP_add(DrawObj * it)
+void mylog::OP_add(DrawObj* it)
 {
 	json jit;
 	jit["operation"] = Add;  // İşlem türünü "Add" olarak ayarlayın
@@ -437,7 +424,7 @@ void mylog::OP_add(DrawObj * it)
 }
 
 // Öğe silmek için kullanılan işlemi başlat
-void mylog::OP_del(DrawObj * it, int pos)
+void mylog::OP_del(DrawObj* it, int pos)
 {
 	json jit;
 	jit["operation"] = Del;  // İşlem türünü "Del" olarak ayarlayın
@@ -446,7 +433,7 @@ void mylog::OP_del(DrawObj * it, int pos)
 }
 
 // Taşımadan önce yapılacak işlemleri başlat
-void mylog::OP_moveStart(DrawObj * d, int pos)
+void mylog::OP_moveStart(DrawObj* d, int pos)
 {
 	jmove.clear();  // "jmove" JSON nesnesini temizle
 	// Eski ptBeg pozisyonunu bilme
@@ -456,7 +443,7 @@ void mylog::OP_moveStart(DrawObj * d, int pos)
 }
 
 // Taşıma işlemi tamamlandıktan sonra yapılacak işlemleri başlat
-void mylog::OP_moveEnd(DrawObj * d)
+void mylog::OP_moveEnd(DrawObj* d)
 {
 	int x = jmove["start"][0];
 	int y = jmove["start"][1];
@@ -469,7 +456,7 @@ void mylog::OP_moveEnd(DrawObj * d)
 }
 
 // Yeniden boyutlandırmadan önce yapılacak işlemleri başlat
-void mylog::OP_sizeStart(DrawObj * d, int pos)
+void mylog::OP_sizeStart(DrawObj* d, int pos)
 {
 	jmove.clear();  // "jmove" JSON nesnesini temizle
 	// Eski ptBeg pozisyonunu bilme
@@ -480,7 +467,7 @@ void mylog::OP_sizeStart(DrawObj * d, int pos)
 }
 
 // Yeniden boyutlandırma işlemi tamamlandıktan sonra yapılacak işlemleri başlat
-void mylog::OP_sizeEnd(DrawObj * d)
+void mylog::OP_sizeEnd(DrawObj* d)
 {
 	jmove["newBegin"] = { d->ptBeg.x, d->ptBeg.y };  // Yeni ptBeg pozisyonunu kaydedin
 	jmove["newEnd"] = { d->ptEnd.x, d->ptEnd.y };  // Yeni ptEnd pozisyonunu kaydedin
@@ -489,7 +476,7 @@ void mylog::OP_sizeEnd(DrawObj * d)
 }
 
 // Metni değiştirmeden önce yapılacak işlemleri başlat
-void mylog::OP_textStart(DrawObj * d, int pos)
+void mylog::OP_textStart(DrawObj* d, int pos)
 {
 	jmove.clear();  // "jmove" JSON nesnesini temizle
 	jmove["operation"] = Texting;  // İşlem türünü "Texting" olarak ayarlayın
@@ -500,9 +487,8 @@ void mylog::OP_textStart(DrawObj * d, int pos)
 	jmove["oldInput"] = { t->inputPos.x, t->inputPos.y };  // Eski giriş pozisyonunu kaydedin
 	jmove["which"] = pos;  // Hangi metinin değiştirildiğini belirtmek için "which" özelliğini ayarlayın
 }
-
 // Metni değiştirme işlemi tamamlandıktan sonra yapılacak işlemleri başlat
-void mylog::OP_textEnd(DrawObj * d)
+void mylog::OP_textEnd(DrawObj* d)
 {
 	TextObj* t = dynamic_cast<TextObj*>(d);
 	vector<string> vs = t->text;
@@ -512,38 +498,36 @@ void mylog::OP_textEnd(DrawObj * d)
 	ToggleUndoButton();  // Geri alma düğmesini güncellemek için bir işlevi çağır
 }
 
-// Değişiklik işlemi başlat
-void mylog::OP_modifyStart(DrawObj * d, int pos)
+void mylog::OP_modifyStart(DrawObj * d, int pos)  // Değişiklik işlemi tamamlandıktan sonra yapılacak işlemleri başlat
 {
-	jmove.clear();  // "jmove" JSON nesnesini temizle
-	jmove["operation"] = Operations::Edit;  // İşlem türünü "Edit" olarak ayarlayın
-	jmove["oldColor"] = d->color;  // Eski rengi kaydedin
-	jmove["which"] = pos;  // Hangi öğenin değiştirildiğini belirtmek için "which" özelliğini ayarlayın
+	jmove.clear();
+	jmove["operation"] = Operations::Edit;
+	jmove["oldColor"] = d->color;
+	jmove["which"] = pos;
 	if (d->objectType < 4)
 	{
-		jmove["oldWidth"] = d->lineWidth;  // Eski çizgi kalınlığını kaydedin
+		jmove["oldWidth"] = d->lineWidth;
 		if (d->objectType > 1)
 		{
-			jmove["oldBgColor"] = d->backgroundColor;  // Eski arka plan rengini kaydedin
+			jmove["oldBgColor"] = d->backgroundColor;
 		}
 	}
 	else // Tip = metin
 	{
-		jmove["oldBgColor"] = d->backgroundColor;  // Eski arka plan rengini kaydedin
+		jmove["oldBgColor"] = d->backgroundColor;
 	}
 }
 
-// Değişiklik işlemi tamamlandıktan sonra yapılacak işlemleri başlat
 void mylog::OP_modifyEnd(DrawObj * d)
 {
-	jmove["newColor"] = d->color;  // Yeni rengi kaydedin
+	jmove["newColor"] = d->color;
 	if (d->objectType < 4)
 	{
-		jmove["newWidth"] = d->lineWidth;  // Yeni çizgi kalınlığını kaydedin
+		jmove["newWidth"] = d->lineWidth;
 	}
 	if (d->objectType > 1)
 	{
-		jmove["newBgColor"] = d->backgroundColor;  // Yeni arka plan rengini kaydedin
+		jmove["newBgColor"] = d->backgroundColor;
 	}
 
 	// Eğer değişiklik yoksa, işlemi eklemeyin
@@ -578,7 +562,8 @@ void mylog::OP_modifyEnd(DrawObj * d)
 
 	if (modified)
 	{
-		ops.push_back(jmove);  // İşlemi "ops" adlı işlem listesine ekleyin
-		ToggleUndoButton();  // Geri alma düğmesini güncellemek için bir işlevi çağır
+		ops.push_back(jmove);
+		ToggleUndoButton();
 	}
 }
+
