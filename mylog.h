@@ -1,4 +1,12 @@
 #pragma once
+/****************************** Modül Başlığı ******************************\
+* Modül Adı: DrawObj.h
+* Proje: Paint_Programing
+* Sürüm: 1.0
+*
+* Geçmiş:
+* * 3/12/2016 Tran Trung Tinh Tarafından Oluşturuldu
+\***************************************************************************/
 
 #include "stdafx.h"  // Önişlemci komut dosyası içe aktar
 #include "json.hpp"  // json veri yapısını kullanmak için nlohmann/json kütüphanesini içe aktar
