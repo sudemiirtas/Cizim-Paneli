@@ -114,9 +114,9 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
 	// Pencere işleme fonksiyonunu belirle
 	wcex.lpfnWndProc = WndProc;
-	// Ekstra sınıf verisi için bellek ayırma (bu örnekte kullanılmıyor)
+	// Ekstra sınıf verisi için bellek ayırma
 	wcex.cbClsExtra = 0;
-	// Ekstra pencere verisi için bellek ayırma (bu örnekte kullanılmıyor)
+	// Ekstra pencere verisi için bellek ayırma
 	wcex.cbWndExtra = 0;
 	// Uygulama örneğini kaydet
 	wcex.hInstance = hInstance;
